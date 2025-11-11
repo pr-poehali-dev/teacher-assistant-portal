@@ -585,46 +585,46 @@ export default function Index() {
                         <CardTitle className="text-lg">История оценок</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Ученик</TableHead>
-                              <TableHead>Оценка</TableHead>
-                              <TableHead>Дата</TableHead>
-                              <TableHead>Примечание</TableHead>
-                              <TableHead className="text-right">Действия</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {grades
-                              .filter((g) => {
-                                const student = students.find((s) => s.id === g.studentId);
-                                return student?.classId === gradeClassId && g.subjectId === gradeSubjectId;
-                              })
-                              .sort((a, b) => b.date.localeCompare(a.date))
-                              .map((grade) => (
-                                <TableRow key={grade.id}>
-                                  <TableCell className="font-medium">
-                                    {students.find((s) => s.id === grade.studentId)?.name}
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="font-bold text-lg">{grade.grade}</span>
-                                  </TableCell>
-                                  <TableCell>{grade.date}</TableCell>
-                                  <TableCell>{grade.note}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => deleteGrade(grade.id)}
-                                    >
-                                      <Icon name="Trash2" size={18} className="text-destructive" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
+                        <div className="space-y-3">
+                          {students
+                            .filter((s) => s.classId === gradeClassId)
+                            .map((student) => {
+                              const studentGrades = grades
+                                .filter((g) => g.studentId === student.id && g.subjectId === gradeSubjectId)
+                                .sort((a, b) => b.date.localeCompare(a.date));
+                              
+                              if (studentGrades.length === 0) return null;
+                              
+                              return (
+                                <div key={student.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50">
+                                  <div className="flex-1 font-medium">{student.name}</div>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {studentGrades.map((grade) => (
+                                      <div
+                                        key={grade.id}
+                                        className="group relative"
+                                      >
+                                        <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-md">
+                                          <span className="font-bold text-lg text-primary">{grade.grade}</span>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => deleteGrade(grade.id)}
+                                          >
+                                            <Icon name="X" size={14} className="text-destructive" />
+                                          </Button>
+                                        </div>
+                                        <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                          {grade.date} {grade.note && `• ${grade.note}`}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
