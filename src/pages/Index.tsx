@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,33 +61,74 @@ interface Homework {
 export default function Index() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [classes, setClasses] = useState<Class[]>([
-    { id: "1", name: "5-А", students: [] },
-    { id: "2", name: "6-Б", students: [] },
-  ]);
-  const [students, setStudents] = useState<Student[]>([
-    { id: "1", name: "Иванов Иван", classId: "1" },
-    { id: "2", name: "Петрова Мария", classId: "1" },
-    { id: "3", name: "Сидоров Петр", classId: "2" },
-  ]);
-  const [subjects, setSubjects] = useState<Subject[]>([
-    { id: "1", name: "Математика" },
-    { id: "2", name: "Русский язык" },
-    { id: "3", name: "История" },
-  ]);
-  const [grades, setGrades] = useState<Grade[]>([
-    { id: "1", studentId: "1", subjectId: "1", grade: 5, date: "2025-11-11", note: "Отлично" },
-    { id: "2", studentId: "1", subjectId: "2", grade: 4, date: "2025-11-11", note: "" },
-  ]);
-  const [homework, setHomework] = useState<Homework[]>([
-    { id: "1", classId: "1", subjectId: "1", title: "Решить задачи", description: "Стр. 45, №1-5", dueDate: "2025-11-15" },
-  ]);
+  const [classes, setClasses] = useState<Class[]>(() => {
+    const saved = localStorage.getItem('classes');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", name: "5-А", students: [] },
+      { id: "2", name: "6-Б", students: [] },
+    ];
+  });
+  const [students, setStudents] = useState<Student[]>(() => {
+    const saved = localStorage.getItem('students');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", name: "Иванов Иван", classId: "1" },
+      { id: "2", name: "Петрова Мария", classId: "1" },
+      { id: "3", name: "Сидоров Петр", classId: "2" },
+    ];
+  });
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const saved = localStorage.getItem('subjects');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", name: "Математика" },
+      { id: "2", name: "Русский язык" },
+      { id: "3", name: "История" },
+    ];
+  });
+  const [grades, setGrades] = useState<Grade[]>(() => {
+    const saved = localStorage.getItem('grades');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", studentId: "1", subjectId: "1", grade: 5, date: "2025-11-11", note: "Отлично" },
+      { id: "2", studentId: "1", subjectId: "2", grade: 4, date: "2025-11-11", note: "" },
+    ];
+  });
+  const [homework, setHomework] = useState<Homework[]>(() => {
+    const saved = localStorage.getItem('homework');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", classId: "1", subjectId: "1", title: "Решить задачи", description: "Стр. 45, №1-5", dueDate: "2025-11-15" },
+    ];
+  });
 
   const [newClassName, setNewClassName] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
   const [importText, setImportText] = useState("");
+  
+  const [gradeClassId, setGradeClassId] = useState("");
+  const [gradeSubjectId, setGradeSubjectId] = useState("");
+  const [gradeDate, setGradeDate] = useState(new Date().toISOString().split("T")[0]);
+  const [gradeNote, setGradeNote] = useState("");
+  const [tempGrades, setTempGrades] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    localStorage.setItem('classes', JSON.stringify(classes));
+  }, [classes]);
+
+  useEffect(() => {
+    localStorage.setItem('students', JSON.stringify(students));
+  }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+  }, [subjects]);
+
+  useEffect(() => {
+    localStorage.setItem('grades', JSON.stringify(grades));
+  }, [grades]);
+
+  useEffect(() => {
+    localStorage.setItem('homework', JSON.stringify(homework));
+  }, [homework]);
 
   const handleLogin = () => {
     if (password === "22") {
@@ -418,29 +459,136 @@ export default function Index() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Icon name="ClipboardList" size={24} />
-                  Журнал оценок
+                  Выставление оценок
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {students.map((student) => (
-                    <Card key={student.id} className="border-2">
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Класс</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={gradeClassId}
+                      onChange={(e) => {
+                        setGradeClassId(e.target.value);
+                        setTempGrades({});
+                      }}
+                    >
+                      <option value="">Выберите класс</option>
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Предмет</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={gradeSubjectId}
+                      onChange={(e) => setGradeSubjectId(e.target.value)}
+                    >
+                      <option value="">Выберите предмет</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Дата</Label>
+                    <Input
+                      type="date"
+                      value={gradeDate}
+                      onChange={(e) => setGradeDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Примечание (общее для всех)</Label>
+                  <Input
+                    placeholder="Контрольная работа, домашнее задание и т.д."
+                    value={gradeNote}
+                    onChange={(e) => setGradeNote(e.target.value)}
+                  />
+                </div>
+
+                {gradeClassId && gradeSubjectId && (
+                  <div className="space-y-4">
+                    <Card className="border-2 border-primary">
                       <CardHeader>
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">{student.name}</CardTitle>
-                          <span className="text-sm text-muted-foreground">
-                            {classes.find((c) => c.id === student.classId)?.name}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Средний балл: <span className="font-bold text-primary text-lg">{getAverageGrade(student.id)}</span>
-                        </p>
+                        <CardTitle className="text-lg">
+                          {classes.find((c) => c.id === gradeClassId)?.name} • {subjects.find((s) => s.id === gradeSubjectId)?.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">{gradeDate} {gradeNote && `• ${gradeNote}`}</p>
                       </CardHeader>
                       <CardContent>
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Предмет</TableHead>
+                              <TableHead className="w-[50%]">Ученик</TableHead>
+                              <TableHead>Оценка</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {students
+                              .filter((s) => s.classId === gradeClassId)
+                              .map((student) => (
+                                <TableRow key={student.id}>
+                                  <TableCell className="font-medium">{student.name}</TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-2">
+                                      {[1, 2, 3, 4, 5].map((grade) => (
+                                        <Button
+                                          key={grade}
+                                          variant={tempGrades[student.id] === grade ? "default" : "outline"}
+                                          size="sm"
+                                          className="w-10 h-10"
+                                          onClick={() => setTempGrades({ ...tempGrades, [student.id]: grade })}
+                                        >
+                                          {grade}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                        <Button
+                          className="w-full mt-4"
+                          onClick={() => {
+                            const newGrades = Object.entries(tempGrades).map(([studentId, grade]) => ({
+                              id: Date.now().toString() + Math.random(),
+                              studentId,
+                              subjectId: gradeSubjectId,
+                              grade,
+                              date: gradeDate,
+                              note: gradeNote,
+                            }));
+                            setGrades([...grades, ...newGrades]);
+                            setTempGrades({});
+                            toast.success(`Добавлено оценок: ${newGrades.length}`);
+                          }}
+                          disabled={Object.keys(tempGrades).length === 0}
+                        >
+                          <Icon name="Save" size={18} className="mr-2" />
+                          Сохранить оценки ({Object.keys(tempGrades).length})
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">История оценок</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ученик</TableHead>
                               <TableHead>Оценка</TableHead>
                               <TableHead>Дата</TableHead>
                               <TableHead>Примечание</TableHead>
@@ -449,11 +597,15 @@ export default function Index() {
                           </TableHeader>
                           <TableBody>
                             {grades
-                              .filter((g) => g.studentId === student.id)
+                              .filter((g) => {
+                                const student = students.find((s) => s.id === g.studentId);
+                                return student?.classId === gradeClassId && g.subjectId === gradeSubjectId;
+                              })
+                              .sort((a, b) => b.date.localeCompare(a.date))
                               .map((grade) => (
                                 <TableRow key={grade.id}>
-                                  <TableCell>
-                                    {subjects.find((s) => s.id === grade.subjectId)?.name}
+                                  <TableCell className="font-medium">
+                                    {students.find((s) => s.id === grade.studentId)?.name}
                                   </TableCell>
                                   <TableCell>
                                     <span className="font-bold text-lg">{grade.grade}</span>
@@ -473,69 +625,10 @@ export default function Index() {
                               ))}
                           </TableBody>
                         </Table>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button className="mt-4" size="sm">
-                              <Icon name="Plus" size={18} className="mr-2" />
-                              Добавить оценку
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Новая оценка для {student.name}</DialogTitle>
-                            </DialogHeader>
-                            <form
-                              onSubmit={(e) => {
-                                e.preventDefault();
-                                const formData = new FormData(e.currentTarget);
-                                addGrade(
-                                  student.id,
-                                  formData.get("subject") as string,
-                                  Number(formData.get("grade")),
-                                  formData.get("note") as string
-                                );
-                                e.currentTarget.reset();
-                              }}
-                              className="space-y-4"
-                            >
-                              <div className="space-y-2">
-                                <Label>Предмет</Label>
-                                <select
-                                  name="subject"
-                                  required
-                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                >
-                                  {subjects.map((subject) => (
-                                    <option key={subject.id} value={subject.id}>
-                                      {subject.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Оценка</Label>
-                                <Input
-                                  name="grade"
-                                  type="number"
-                                  min="1"
-                                  max="5"
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Примечание</Label>
-                                <Textarea name="note" />
-                              </div>
-                              <Button type="submit" className="w-full">
-                                Сохранить
-                              </Button>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -636,16 +729,93 @@ export default function Index() {
                               {subjects.find((s) => s.id === hw.subjectId)?.name}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setHomework(homework.filter((h) => h.id !== hw.id));
-                              toast.success("Задание удалено");
-                            }}
-                          >
-                            <Icon name="Trash2" size={18} className="text-destructive" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Icon name="Pencil" size={18} className="text-primary" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Редактировать задание</DialogTitle>
+                                </DialogHeader>
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+                                    const updatedHw: Homework = {
+                                      id: hw.id,
+                                      classId: formData.get("class") as string,
+                                      subjectId: formData.get("subject") as string,
+                                      title: formData.get("title") as string,
+                                      description: formData.get("description") as string,
+                                      dueDate: formData.get("dueDate") as string,
+                                    };
+                                    setHomework(homework.map((h) => (h.id === hw.id ? updatedHw : h)));
+                                    toast.success("Задание обновлено");
+                                  }}
+                                  className="space-y-4"
+                                >
+                                  <div className="space-y-2">
+                                    <Label>Класс</Label>
+                                    <select
+                                      name="class"
+                                      required
+                                      defaultValue={hw.classId}
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                      {classes.map((cls) => (
+                                        <option key={cls.id} value={cls.id}>
+                                          {cls.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Предмет</Label>
+                                    <select
+                                      name="subject"
+                                      required
+                                      defaultValue={hw.subjectId}
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                      {subjects.map((subject) => (
+                                        <option key={subject.id} value={subject.id}>
+                                          {subject.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Название</Label>
+                                    <Input name="title" required defaultValue={hw.title} />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Описание</Label>
+                                    <Textarea name="description" required defaultValue={hw.description} />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Срок сдачи</Label>
+                                    <Input name="dueDate" type="date" required defaultValue={hw.dueDate} />
+                                  </div>
+                                  <Button type="submit" className="w-full">
+                                    Сохранить изменения
+                                  </Button>
+                                </form>
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setHomework(homework.filter((h) => h.id !== hw.id));
+                                toast.success("Задание удалено");
+                              }}
+                            >
+                              <Icon name="Trash2" size={18} className="text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent>
